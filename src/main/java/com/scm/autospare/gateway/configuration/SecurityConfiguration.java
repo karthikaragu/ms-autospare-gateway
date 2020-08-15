@@ -1,5 +1,6 @@
 package com.scm.autospare.gateway.configuration;
 
+import com.scm.autospare.gateway.service.AutospareEntryPoint;
 import com.scm.autospare.gateway.service.AutospareUserDetailsService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -9,7 +10,6 @@ import org.springframework.security.config.annotation.authentication.builders.Au
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
-import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.password.NoOpPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
@@ -19,6 +19,9 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
 
     @Autowired
     AutospareUserDetailsService autospareUserDetailsService;
+
+    @Autowired
+    AutospareEntryPoint autospareEntryPoint;
 
     @Override
     protected void configure(AuthenticationManagerBuilder auth) throws Exception {
@@ -33,15 +36,15 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
         // Entry points
         http.authorizeRequests()
                 .antMatchers("/**/registeruser").permitAll()
-                .antMatchers("/**/dealer/**").hasRole("ROLE_DLR")
-                .antMatchers("/**/customer/**").hasRole("ROLE_CUST")
-                .antMatchers(HttpMethod.GET).hasRole("ROLE_ADMIN")
+                .antMatchers("/**/dealer/*", "/**/products/*").hasRole("DLR")
+                .antMatchers("/**/customer/*").hasRole("CUST")
+                .antMatchers(HttpMethod.GET).hasRole("ADMIN")
                 .anyRequest().authenticated()
                 .and().formLogin()
                 .and().logout().permitAll();
 
         // If a user try to access a resource without having enough permissions
-        http.exceptionHandling().accessDeniedPage("/login");
+        http.exceptionHandling().authenticationEntryPoint(autospareEntryPoint);
         http.httpBasic();
     }
 
